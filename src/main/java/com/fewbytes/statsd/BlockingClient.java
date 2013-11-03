@@ -1,16 +1,17 @@
 package com.fewbytes.statsd;
 
+import net.jcip.annotations.ThreadSafe;
+
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 
 /**
- * Created with IntelliJ IDEA.
  * User: avishai
  * Date: 9/23/13
- * Time: 9:05 AM
- * To change this template use File | Settings | File Templates.
  */
+
+@ThreadSafe
 public class BlockingClient extends Client {
     private final DatagramSocket socket;
     private final InetAddress HostAddress;

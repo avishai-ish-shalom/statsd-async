@@ -1,5 +1,7 @@
 package com.fewbytes.statsd;
 
+import net.jcip.annotations.ThreadSafe;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -9,6 +11,8 @@ import java.nio.channels.DatagramChannel;
 /**
  * User: avishai
  */
+
+@ThreadSafe
 public class NIOClient extends Client {
     private final InetSocketAddress address;
     private final DatagramChannel channel;

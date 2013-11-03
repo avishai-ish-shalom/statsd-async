@@ -10,6 +10,11 @@
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
+            <groupId>net.jcip</groupId>
+            <artifactId>jcip-annotations</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
             <version>3.2.0</version>

@@ -2,11 +2,13 @@ package com.fewbytes.statsd.disruptor;
 
 import com.fewbytes.statsd.BlockingClient;
 import com.fewbytes.statsd.Client;
-import com.lmax.disruptor.*;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslatorOneArg;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.YieldingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.jcip.annotations.ThreadSafe;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
@@ -14,16 +16,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Created with IntelliJ IDEA.
  * User: avishai
- * Date: 9/25/13
- * Time: 9:01 PM
- * To change this template use File | Settings | File Templates.
  */
+
+/*
+  An async StatsD client which uses LMAX disruptor to hand off payload to worker thread.
+  This client is lossy and will drop events silently if it cannot obtain a slot from the ring buffer sequencer
+ */
+
+@ThreadSafe
 public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdEvent, String> {
     private final Disruptor<StatsdEvent> disruptor;
     private final Executor executor;
     private final RingBuffer<StatsdEvent> ringBuffer;
+    private final int RING_BUFFER_SIZE = 262144;
 
     public AsyncClient(String host, int port) throws IOException {
         this.executor = Executors.newSingleThreadExecutor(new ThreadFactory () {
@@ -35,7 +41,7 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
             }
         });
         this.disruptor = new  Disruptor<StatsdEvent>(StatsdEvent.EVENT_FACTORY,
-                262144,
+                RING_BUFFER_SIZE,
                 this.executor,
                 ProducerType.MULTI,
                 new YieldingWaitStrategy());
@@ -50,7 +56,7 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
 
     @Override
     protected void send(final String data) {
-        this.ringBuffer.tryPublishEvent(this, data);
+        this.ringBuffer.tryPublishEvent(this, data); // if we can't publish, silently drop the payload
     }
 
     class StatsDEventHandler extends BlockingClient implements EventHandler<StatsdEvent> {

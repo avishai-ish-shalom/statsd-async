@@ -1,5 +1,7 @@
 package com.fewbytes.statsd;
 
+import net.jcip.annotations.ThreadSafe;
+
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
@@ -7,12 +9,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 
 /**
- * Created with IntelliJ IDEA.
  * User: avishai
  * Date: 11/1/13
- * Time: 11:23 PM
- * To change this template use File | Settings | File Templates.
  */
+
+
+/*
+An async StatsD client which uses SynchronousQueue to transfer payload to a single thread executor
+ */
+
+@ThreadSafe
 public class SyncronousQueueClient extends MultiMetricClient implements Runnable {
     Client innerClient;
     ExecutorService executor;
@@ -39,7 +45,7 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
                 s = queue.take();
                 appendToBuffer(s);
             } catch (InterruptedException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                logger.error("couldn't append payload to buffer", e);
             }
         }
     }

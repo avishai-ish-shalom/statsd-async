@@ -3,21 +3,25 @@ package com.fewbytes.statsd;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Created with IntelliJ IDEA.
  * User: avishai
  * Date: 11/1/13
- * Time: 11:34 PM
- * To change this template use File | Settings | File Templates.
  */
 public abstract class MultiMetricClient extends BlockingClient {
     private int BUFFER_CAPACITY = 1024;
     private ByteBuffer bb;
+    private final Timer flushThread;
+    private final int FLUSH_INTERVAL = 2000;
 
     public MultiMetricClient(String host, int port) throws UnknownHostException, SocketException {
         super(host, port);
-        this.bb = ByteBuffer.allocate(BUFFER_CAPACITY);
+        bb = ByteBuffer.allocate(BUFFER_CAPACITY);
+        this.flushThread = new Timer();
+        flushThread.schedule(new PeriodicFlush(this), FLUSH_INTERVAL, FLUSH_INTERVAL);
     }
 
     protected void appendToBuffer(String payload) {
@@ -35,5 +39,18 @@ public abstract class MultiMetricClient extends BlockingClient {
         this.send(bb);
         bb.limit(bb.capacity());
         bb.rewind();
+    }
+
+    class PeriodicFlush extends TimerTask {
+        private final MultiMetricClient statsdClient;
+
+        PeriodicFlush(MultiMetricClient statsdClient1) {
+            this.statsdClient = statsdClient1;
+        }
+
+        @Override
+        public void run() {
+            statsdClient.flush();
+        }
     }
 }

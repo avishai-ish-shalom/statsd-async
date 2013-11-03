@@ -3,12 +3,11 @@ package com.fewbytes.statsd.disruptor;
 import com.lmax.disruptor.EventFactory;
 
 /**
- * Created with IntelliJ IDEA.
  * User: avishai
  * Date: 9/25/13
- * Time: 9:07 PM
- * To change this template use File | Settings | File Templates.
  */
+
+
 public final class StatsdEvent {
     private String payload;
 
