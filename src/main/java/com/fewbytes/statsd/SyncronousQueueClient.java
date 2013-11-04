@@ -20,21 +20,35 @@ An async StatsD client which uses SynchronousQueue to transfer payload to a sing
 
 @ThreadSafe
 public class SyncronousQueueClient extends MultiMetricClient implements Runnable {
-    Client innerClient;
-    ExecutorService executor;
-    SynchronousQueue<String> queue;
+    private final Client innerClient;
+    private final ExecutorService executor;
+    private final SynchronousQueue<String> queue;
+    private final boolean lossy;
 
-    public SyncronousQueueClient(String host, int port) throws SocketException, UnknownHostException {
+    public SyncronousQueueClient(String host, int port, boolean lossy) throws SocketException, UnknownHostException {
         super(host, port);
+        this.lossy = lossy;
         this.innerClient = new BlockingClient(host, port);
         this.executor = Executors.newSingleThreadExecutor();
         this.queue = new SynchronousQueue<String>(); // fair = false because we don't care about order
         this.executor.execute(this);
     }
 
+    public SyncronousQueueClient(String host, int port) throws SocketException, UnknownHostException {
+        this(host, port, true);
+    }
+
     @Override
     protected void send(String payload) {
-        queue.offer(payload);
+        if (lossy) {
+            queue.offer(payload);
+        } else {
+            try {
+                queue.put(payload);
+            } catch (InterruptedException e) {
+                logger.error("Interrupted while queueing payload", e);
+            }
+        }
     }
 
     @Override
@@ -45,7 +59,7 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
                 s = queue.take();
                 appendToBuffer(s);
             } catch (InterruptedException e) {
-                logger.error("couldn't append payload to buffer", e);
+                logger.error("Interrupted while appending payload to buffer", e);
             }
         }
     }

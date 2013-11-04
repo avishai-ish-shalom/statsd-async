@@ -30,8 +30,10 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
     private final Executor executor;
     private final RingBuffer<StatsdEvent> ringBuffer;
     private final int RING_BUFFER_SIZE = 262144;
+    private final boolean lossy;
 
-    public AsyncClient(String host, int port) throws IOException {
+    public AsyncClient(String host, int port, boolean lossy) throws IOException {
+        this.lossy = lossy;
         this.executor = Executors.newSingleThreadExecutor(new ThreadFactory () {
             @Override
             public Thread newThread(Runnable r) {
@@ -49,6 +51,10 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
         this.ringBuffer = this.disruptor.start();
     }
 
+    public AsyncClient(String host, int port) throws IOException {
+        this(host, port, true);
+    }
+
     @Override
     public void translateTo(StatsdEvent event, long sequence, String data) {
         event.setPayload(data);
@@ -56,7 +62,11 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
 
     @Override
     protected void send(final String data) {
-        this.ringBuffer.tryPublishEvent(this, data); // if we can't publish, silently drop the payload
+        if (lossy) {
+            this.ringBuffer.tryPublishEvent(this, data); // if we can't publish, silently drop the payload
+        } else {
+            this.ringBuffer.publishEvent(this, data);
+        }
     }
 
     class StatsDEventHandler extends BlockingClient implements EventHandler<StatsdEvent> {
