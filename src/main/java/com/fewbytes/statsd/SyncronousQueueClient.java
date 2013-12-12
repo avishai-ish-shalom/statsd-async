@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * User: avishai
@@ -20,16 +21,28 @@ An async StatsD client which uses SynchronousQueue to transfer payload to a sing
 
 @ThreadSafe
 public class SyncronousQueueClient extends MultiMetricClient implements Runnable {
-    private final Client innerClient;
     private final ExecutorService executor;
     private final SynchronousQueue<String> queue;
     private final boolean lossy;
+    private static final int DEFAULT_THREAD_PRIORITY = 5;
 
     public SyncronousQueueClient(String host, int port, boolean lossy) throws SocketException, UnknownHostException {
+        this(host, port, lossy, DEFAULT_THREAD_PRIORITY);
+    }
+
+    public SyncronousQueueClient(String host, int port, boolean lossy, final int threadPriority) throws SocketException, UnknownHostException {
         super(host, port);
         this.lossy = lossy;
-        this.innerClient = new BlockingClient(host, port);
-        this.executor = Executors.newSingleThreadExecutor();
+        this.executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("statsd-flusher");
+                thread.setDaemon(true);
+                thread.setPriority(threadPriority);
+                return thread;
+            }
+        });
         this.queue = new SynchronousQueue<String>(); // fair = false because we don't care about order
         this.executor.execute(this);
     }
@@ -60,6 +73,8 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
                 appendToBuffer(s);
             } catch (InterruptedException e) {
                 logger.error("Interrupted while appending payload to buffer", e);
+            } catch (Exception e) {
+                logger.error("Unknown error occurred", e);
             }
         }
     }

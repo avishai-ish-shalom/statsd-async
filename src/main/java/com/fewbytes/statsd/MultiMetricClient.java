@@ -5,7 +5,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * User: avishai
@@ -20,7 +19,7 @@ public abstract class MultiMetricClient extends BlockingClient {
     public MultiMetricClient(String host, int port) throws UnknownHostException, SocketException {
         super(host, port);
         bb = ByteBuffer.allocate(BUFFER_CAPACITY);
-        this.flushThread = new Timer();
+        this.flushThread = new Timer("statsd-periodic-flush", true);
         flushThread.schedule(new PeriodicFlush(this), FLUSH_INTERVAL, FLUSH_INTERVAL);
     }
 
