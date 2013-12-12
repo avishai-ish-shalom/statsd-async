@@ -19,12 +19,15 @@ public abstract class MultiMetricClient extends BlockingClient {
     public MultiMetricClient(String host, int port) throws UnknownHostException, SocketException {
         super(host, port);
         bb = ByteBuffer.allocate(BUFFER_CAPACITY);
-        this.flushThread = new Timer("statsd-periodic-flush", true);
+        this.flushThread = new Timer();
         flushThread.schedule(new PeriodicFlush(this), FLUSH_INTERVAL, FLUSH_INTERVAL);
     }
 
     protected void appendToBuffer(String payload) {
-        if (bb.remaining() < payload.length() + 1) {
+        if (payload.isEmpty()) {
+            flush();
+            return;
+        } else if (bb.remaining() < payload.length() + 1) {
             flush();
         }
         if (bb.position() > 0) {
@@ -34,10 +37,16 @@ public abstract class MultiMetricClient extends BlockingClient {
     }
 
     protected void flush() {
-        bb.flip();
-        this.send(bb);
-        bb.limit(bb.capacity());
-        bb.rewind();
+        if (bb.position() > 0) {
+            bb.flip();
+            this.send(bb);
+            bb.limit(bb.capacity());
+            bb.rewind();
+        }
+    }
+
+    public void signalFlush() {
+        this.send(""); // we use empty string to signal a flush
     }
 
     class PeriodicFlush extends TimerTask {
@@ -49,7 +58,7 @@ public abstract class MultiMetricClient extends BlockingClient {
 
         @Override
         public void run() {
-            statsdClient.flush();
+            statsdClient.signalFlush();
         }
     }
 }
