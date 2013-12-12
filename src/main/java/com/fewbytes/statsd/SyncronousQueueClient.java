@@ -24,7 +24,7 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
     private final ExecutorService executor;
     private final SynchronousQueue<String> queue;
     private final boolean lossy;
-    private static final int DEFAULT_THREAD_PRIORITY = 5;
+    private static final int DEFAULT_THREAD_PRIORITY = 7;
 
     public SyncronousQueueClient(String host, int port, boolean lossy) throws SocketException, UnknownHostException {
         this(host, port, lossy, DEFAULT_THREAD_PRIORITY);
