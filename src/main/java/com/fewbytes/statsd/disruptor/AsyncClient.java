@@ -35,7 +35,6 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
     public AsyncClient(String host, int port, boolean lossy) throws IOException {
         this.lossy = lossy;
         this.executor = Executors.newSingleThreadExecutor(new ThreadFactory () {
-            @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
                 t.setPriority(Thread.MAX_PRIORITY);
@@ -55,7 +54,6 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
         this(host, port, true);
     }
 
-    @Override
     public void translateTo(StatsdEvent event, long sequence, String data) {
         event.setPayload(data);
     }
@@ -69,12 +67,11 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
         }
     }
 
-    class StatsDEventHandler extends BlockingClient implements EventHandler<StatsdEvent> {
-        public StatsDEventHandler(String host, int port) throws IOException {
+    private class StatsDEventHandler extends BlockingClient implements EventHandler<StatsdEvent> {
+        StatsDEventHandler(String host, int port) throws IOException {
             super(host, port);
         }
 
-        @Override
         public void onEvent(StatsdEvent statsdEvent, long l, boolean b) throws Exception {
             send(statsdEvent.getPayload());
         }

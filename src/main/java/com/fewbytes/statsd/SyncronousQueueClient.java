@@ -34,7 +34,6 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
         super(host, port);
         this.lossy = lossy;
         this.executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
             public Thread newThread(Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setName("statsd-flusher");
@@ -64,7 +63,6 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
         }
     }
 
-    @Override
     public void run() {
         String s;
         while (true) {
