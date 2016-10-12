@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * User: avishai
@@ -25,6 +26,8 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
     private final SynchronousQueue<String> queue;
     private final boolean lossy;
     private static final int DEFAULT_THREAD_PRIORITY = 7;
+    private AtomicLong lost = new AtomicLong(0);
+    private AtomicLong sent = new AtomicLong(0);
 
     public SyncronousQueueClient(String host, int port, boolean lossy) throws SocketException, UnknownHostException {
         this(host, port, lossy, DEFAULT_THREAD_PRIORITY);
@@ -53,14 +56,21 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
     @Override
     protected void send(String payload) {
         if (lossy) {
-            queue.offer(payload);
+            if (!queue.offer(payload))
+                lost.incrementAndGet();
         } else {
             try {
                 queue.put(payload);
             } catch (InterruptedException e) {
                 logger.error("Interrupted while queueing payload", e);
+                lost.incrementAndGet();
             }
         }
+        sent.incrementAndGet();
+    }
+
+    public double getLossRatio() {
+        return lost.doubleValue() / sent.get();
     }
 
     public void run() {

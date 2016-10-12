@@ -59,7 +59,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class EtsyClient extends TimerTask {
+public class EtsyClient extends TimerTask implements IClient {
     private ByteBuffer sendBuffer;
     private Timer flushTimer;
     private boolean multi_metrics = false;
@@ -265,5 +265,38 @@ public class EtsyClient extends TimerTask {
                             _address.getPort()), e);
             return false;
         }
+    }
+
+    public void incr(String name, int count, double scaleFactor) {
+        increment(name, count, scaleFactor);
+    }
+
+    public void incr(String name, int count) {
+        incr(name, count, 1);
+    }
+
+    public void incr(String name) {
+        incr(name, 1, 1);
+
+    }
+
+    public void decr(String name, int count, double scaleFactor) {
+        decrement(name, count, scaleFactor);
+    }
+
+    public void decr(String name, int count) {
+        decr(name, count, 1);
+    }
+
+    public void decr(String name) {
+        decr(name, 1, 1);
+    }
+
+    public void timer(String name, double value, double scaleFactor) {
+        timing(name, (int)value);
+    }
+
+    public void timer(String name, double value) {
+
     }
 }

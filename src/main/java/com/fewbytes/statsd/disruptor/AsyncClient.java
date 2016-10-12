@@ -1,11 +1,11 @@
 package com.fewbytes.statsd.disruptor;
 
-import com.fewbytes.statsd.BlockingClient;
 import com.fewbytes.statsd.Client;
+import com.fewbytes.statsd.MultiMetricClient;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.EventTranslatorOneArg;
 import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.YieldingWaitStrategy;
+import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import net.jcip.annotations.ThreadSafe;
@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * User: avishai
@@ -31,6 +32,8 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
     private final RingBuffer<StatsdEvent> ringBuffer;
     private final int RING_BUFFER_SIZE = 262144;
     private final boolean lossy;
+    private AtomicLong lost = new AtomicLong(0);
+    private AtomicLong sent = new AtomicLong(0);
 
     public AsyncClient(String host, int port, boolean lossy) throws IOException {
         this.lossy = lossy;
@@ -45,7 +48,7 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
                 RING_BUFFER_SIZE,
                 this.executor,
                 ProducerType.MULTI,
-                new YieldingWaitStrategy());
+                new SleepingWaitStrategy());
         this.disruptor.handleEventsWith(new StatsDEventHandler(host, port));
         this.ringBuffer = this.disruptor.start();
     }
@@ -61,13 +64,21 @@ public class AsyncClient extends Client implements EventTranslatorOneArg<StatsdE
     @Override
     protected void send(final String data) {
         if (lossy) {
-            this.ringBuffer.tryPublishEvent(this, data); // if we can't publish, silently drop the payload
+            if (!this.ringBuffer.tryPublishEvent(this, data)) {
+                // if we can't publish, silently drop the payload
+                lost.incrementAndGet();
+            }
         } else {
             this.ringBuffer.publishEvent(this, data);
         }
+        sent.incrementAndGet();
     }
 
-    private class StatsDEventHandler extends BlockingClient implements EventHandler<StatsdEvent> {
+    public double getLossRatio() {
+        return lost.doubleValue() / sent.get();
+    }
+
+    private class StatsDEventHandler extends MultiMetricClient implements EventHandler<StatsdEvent> {
         StatsDEventHandler(String host, int port) throws IOException {
             super(host, port);
         }

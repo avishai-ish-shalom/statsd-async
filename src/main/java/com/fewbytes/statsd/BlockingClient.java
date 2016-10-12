@@ -40,7 +40,7 @@ public class BlockingClient extends Client {
         try {
             socket.send(packet);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Failed to send metrics", e);
         }
 
     }

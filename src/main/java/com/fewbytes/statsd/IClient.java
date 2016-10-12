@@ -9,20 +9,20 @@ package com.fewbytes.statsd;
  */
 public interface IClient {
     // Increment a counter by count
-    public void incr(String name, int count, float scaleFactor);
+    public void incr(String name, int count, double scaleFactor);
     public void incr(String name, int count);
     public void incr(String name);
     // Decrement a counter by count
-    public void decr(String name, int count, float scaleFactor);
+    public void decr(String name, int count, double scaleFactor);
     public void decr(String name, int count);
     public void decr(String name);
 
     // Set the value of a gauge
-    public void gauge(String name, float value, float scaleFactor);
-    public void gauge(String name, float value);
+    public boolean gauge(String name, double value, double scaleFactor);
+    public boolean gauge(String name, double value);
 
     // Set the value of a timer
-    public void timer(String name, float value, float scaleFactor);
+    public void timer(String name, double value, double scaleFactor);
 
-    public void timer(String name, float value);
+    public void timer(String name, double value);
 }
