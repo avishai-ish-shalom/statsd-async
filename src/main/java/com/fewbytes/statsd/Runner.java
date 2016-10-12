@@ -11,10 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by avishaiis on 08/10/2016.
- */
-
 enum ClientType {BLOCKING, ETSY, NIO, CLQ, DISRUPTOR, DISRUPTOR_LOSSY, CAS, SYNQ, SYNQ_LOSSY }
 
 public class Runner {
@@ -43,10 +39,10 @@ public class Runner {
                 client = new NIOClient(host, port);
                 break;
             case SYNQ:
-                client = new SyncronousQueueClient(host, port, false);
+                client = new SynchronousQueueClient(host, port, false);
                 break;
             case SYNQ_LOSSY:
-                client = new SyncronousQueueClient(host, port, true);
+                client = new SynchronousQueueClient(host, port, true);
                 break;
             case CLQ:
                 client = new ConcurrentLinkedQueueClient(host, port);
@@ -95,7 +91,7 @@ public class Runner {
     private static void runThreads(IClient client, int times, int nThreads) throws InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
         for (int i = 0; i < nThreads; i++) {
-            executorService.submit(() -> { runClient(client, times);});
+            executorService.submit(() -> runClient(client, times));
         }
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.HOURS);

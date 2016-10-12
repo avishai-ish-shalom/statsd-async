@@ -21,7 +21,7 @@ An async StatsD client which uses SynchronousQueue to transfer payload to a sing
  */
 
 @ThreadSafe
-public class SyncronousQueueClient extends MultiMetricClient implements Runnable {
+public class SynchronousQueueClient extends MultiMetricClient implements Runnable {
     private final ExecutorService executor;
     private final SynchronousQueue<String> queue;
     private final boolean lossy;
@@ -29,11 +29,11 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
     private AtomicLong lost = new AtomicLong(0);
     private AtomicLong sent = new AtomicLong(0);
 
-    public SyncronousQueueClient(String host, int port, boolean lossy) throws SocketException, UnknownHostException {
+    public SynchronousQueueClient(String host, int port, boolean lossy) throws SocketException, UnknownHostException {
         this(host, port, lossy, DEFAULT_THREAD_PRIORITY);
     }
 
-    public SyncronousQueueClient(String host, int port, boolean lossy, final int threadPriority) throws SocketException, UnknownHostException {
+    public SynchronousQueueClient(String host, int port, boolean lossy, final int threadPriority) throws SocketException, UnknownHostException {
         super(host, port);
         this.lossy = lossy;
         this.executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -49,7 +49,7 @@ public class SyncronousQueueClient extends MultiMetricClient implements Runnable
         this.executor.execute(this);
     }
 
-    public SyncronousQueueClient(String host, int port) throws SocketException, UnknownHostException {
+    public SynchronousQueueClient(String host, int port) throws SocketException, UnknownHostException {
         this(host, port, true);
     }
 

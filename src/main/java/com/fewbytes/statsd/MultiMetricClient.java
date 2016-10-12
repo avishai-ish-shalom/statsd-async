@@ -13,7 +13,6 @@ import java.util.TimerTask;
 public abstract class MultiMetricClient extends BlockingClient {
     private static final int BUFFER_CAPACITY = 64*1024;
     private ByteBuffer bb;
-    private final Timer flushThread;
     private final int FLUSH_INTERVAL = 2000;
 
     public MultiMetricClient(String host, int port) throws  UnknownHostException, SocketException {
@@ -23,7 +22,7 @@ public abstract class MultiMetricClient extends BlockingClient {
     public MultiMetricClient(String host, int port, int bufferSize) throws UnknownHostException, SocketException {
         super(host, port);
         bb = ByteBuffer.allocate(bufferSize);
-        this.flushThread = new Timer();
+        Timer flushThread = new Timer();
         flushThread.schedule(new PeriodicFlush(this), FLUSH_INTERVAL, FLUSH_INTERVAL);
     }
 
@@ -53,11 +52,12 @@ public abstract class MultiMetricClient extends BlockingClient {
         this.send(""); // we use empty string to signal a flush
     }
 
-    protected void finalize() {
+    protected void finalize() throws Throwable {
         flush();
+        super.finalize();
     }
 
-    class PeriodicFlush extends TimerTask {
+    private class PeriodicFlush extends TimerTask {
         private final MultiMetricClient statsdClient;
 
         PeriodicFlush(MultiMetricClient statsdClient1) {
